@@ -12,6 +12,25 @@ class ApplicationController < ActionController::Base
   layout "application"
   theme THEME_NAME # DEPENDENCY: lib/theme_reader.rb
 
+  # GET /(venues|events)/duplicates
+  def duplicates
+    @type = params[:type]
+    grouped_model = "@grouped_#{controller_name}"
+    begin
+      instance_variable_set grouped_model, controller_name.classify.constantize.find_duplicates_by_type(@type)
+    rescue ArgumentError => e
+      instance_variable_set grouped_model, {}
+      flash[:failure] = "#{e}"
+    end
+
+    @page_title = "Duplicate #{controller_name.classify} Squasher"
+
+    respond_to do |format|
+      format.html # index.html.erb
+      format.xml  { render :xml => instance_variable_get(grouped_model) }
+    end
+  end
+
 protected
 
   #---[ Helpers ]---------------------------------------------------------
