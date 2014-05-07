@@ -1,6 +1,27 @@
 module SquashManyDuplicatesMixin
   def self.included(mixee)
     mixee.class_eval do
+      def duplicates
+        @type = params[:type]
+        begin
+          instance_variable_model = self.controller_name
+          instance_variable_that_we_need_to_set = "@grouped_#{instance_variable_model}".to_sym
+          my_model = self.controller_name.classify.constantize
+          instance_variable_set(instance_variable_that_we_need_to_set, my_model.find_duplicates_by_type(@type))
+          #@grouped_events = my_model.find_duplicates_by_type(@type)
+        rescue ArgumentError => e
+          instance_variable_set(instance_variable_that_we_need_to_set, {})
+          #@grouped_events = {}
+          flash[:failure] = "#{e}"
+        end
+
+        @page_title = "Duplicate #{instance_variable_model.titleize} Squasher"
+
+        respond_to do |format|
+          format.html # index.html.erb
+          format.xml  { render :xml => self.instance_variable_get(instance_variable_that_we_need_to_set) }
+        end
+      end
 
       # POST /venues/squash_multiple_duplicates
       def squash_many_duplicates
